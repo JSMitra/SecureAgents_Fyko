@@ -167,6 +167,20 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  fyko-ui:
+    build:
+      context: ./fyko_ui
+      dockerfile: Dockerfile
+    image: fyko_ui:latest
+    networks:
+      - fyko-net
+    ports:
+      - "3000:3000"
+    depends_on:
+      - fyko-server
+      - secret-plan-creator
+      - secret-plan-reviewer
+
 volumes:
   postgres-data:
   mongodb-data:

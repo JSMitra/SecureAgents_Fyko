@@ -212,12 +212,32 @@ def _extract_artifact_text(task_resp: dict) -> str:
 
 # ── Main interaction flow ─────────────────────────────────────────────────────
 
-async def handle_user_message(raw_message: str) -> str:
+async def handle_user_message(
+    raw_message: str,
+    session_id: Optional[str] = None,
+    event_cb: Optional[Any] = None,
+) -> str:
     """
     Full end-to-end flow for a human user's movie question.
     Returns the final (decrypted, LLM-refined) answer as a string.
+    Emits real-time progress events via event_cb if supplied.
     """
+    def emit(step: int, name: str, desc: str, data: Optional[dict] = None):
+        if event_cb:
+            try:
+                event_cb({
+                    "type": "step",
+                    "step": step,
+                    "name": name,
+                    "description": desc,
+                    "timestamp": time.time(),
+                    "data": data or {},
+                })
+            except Exception as e:
+                logger.warning("Failed to emit step event: %s", e)
+
     # ── Step 1: refine query with Gemini ─────────────────────────────────────
+    emit(1, "query_refinement", "Refining user query under intelligence operative cover...")
     refined_query = _gemini(
         f"""You are the Secret Plan Creator — an intelligence operative whose cover
 is asking about the latest movies.  A contact sent you this message:
@@ -229,24 +249,38 @@ last 12 months) that an analyst could answer concisely.  Output only the
 rewritten question, nothing else."""
     )
     logger.info("Refined query: %s", refined_query)
+    emit(1, "query_refined", f"Cover query formulated: '{refined_query}'", {"query": refined_query})
 
     # ── Step 2: request ANN from FykoServer ──────────────────────────────────
+    emit(2, "ann_requested", "Initiating ANN model generation request with FykoServer...")
     model_ulid = await _request_ann()
     ann_callbacks[model_ulid] = {"status": "PENDING"}
     logger.info("ANN requested, ulid=%s", model_ulid)
+    emit(2, "ulid_assigned", f"FykoServer allocated request ULID: {model_ulid}", {"ulid": model_ulid})
 
+    emit(3, "ann_training", f"Queued to RabbitMQ — ANN_Generator pool training model ({model_ulid})...")
     await _wait_for_ann(model_ulid)
+    emit(3, "ann_ready", f"ANN model training completed and stored in MongoDB GridFS")
 
     # ── Step 3: download model ────────────────────────────────────────────────
+    emit(4, "download_model", f"Downloading serialized model .pkl ({model_ulid}) from FykoServer...")
     model = await _download_model(model_ulid)
+    emit(4, "model_loaded", "ANN model weights loaded into memory")
 
     # ── Step 4: derive AES key ────────────────────────────────────────────────
+    emit(5, "derive_aes", "Generating AES-256 key via neural activation thresholding...")
     random_string = str(uuid.uuid4())
     utc_time      = int(time.time())
     aes_key_hex   = generate_aes_key(model, random_string, utc_time)
     logger.info("AES key derived for model %s.", model_ulid)
+    emit(5, "aes_derived", "AES-256 key derived from ANN neuron output", {
+        "random_string": random_string,
+        "utc_time": utc_time,
+        "masked_key": aes_key_hex[:8] + "..." + aes_key_hex[-8:]
+    })
 
     # ── Step 5: fetch Reviewer's RSA public key ───────────────────────────────
+    emit(6, "fetch_peer_key", "Querying PostgreSQL agent_keys for Reviewer RSA-2048 public key...")
     reviewer_pub_pem = None
     for attempt in range(12):          # wait up to ~60 s for reviewer to register
         reviewer_pub_pem = fetch_agent_public_key("secret_plan_reviewer")
@@ -259,8 +293,10 @@ rewritten question, nothing else."""
         raise RuntimeError("Secret Plan Reviewer public key not found in agent_keys.")
 
     reviewer_pub = load_public_key_from_pem(reviewer_pub_pem)
+    emit(6, "peer_key_acquired", "Secret Plan Reviewer RSA public key verified")
 
     # ── Step 6: RSA-encrypt key material → send to Reviewer ──────────────────
+    emit(7, "rsa_key_share", "RSA-OAEP encrypting model ULID & seed parameters...")
     key_material = json.dumps({
         "model_ulid":    model_ulid,
         "random_string": random_string,
@@ -278,13 +314,16 @@ rewritten question, nothing else."""
     key_share_task = _build_task(key_share_task_id, key_share_payload)
     await _send_a2a_task(REVIEWER_URL, key_share_task)
     logger.info("Key-share task sent: %s", key_share_task_id)
+    emit(7, "key_share_dispatched", f"A2A Key-Share task dispatched (Task ID: {key_share_task_id})")
 
     # Poll until key_share is processed (Reviewer downloads the model)
     ks_resp = await _poll_a2a_task(REVIEWER_URL, key_share_task_id)
     if ks_resp.get("status", {}).get("state") == "failed":
         raise RuntimeError(f"Reviewer failed to process key_share: {ks_resp}")
+    emit(7, "key_share_ack", "Reviewer downloaded ANN model & synchronized AES key")
 
     # ── Step 7: AES-encrypt query → send to Reviewer ─────────────────────────
+    emit(8, "query_encrypt", "Encrypting movie inquiry using ANN-derived AES key...")
     encrypted_query = encrypt_with_aes(refined_query, aes_key_hex)
     query_task_id   = _new_task_id()
     query_payload   = json.dumps({
@@ -295,16 +334,26 @@ rewritten question, nothing else."""
     query_task = _build_task(query_task_id, query_payload)
     await _send_a2a_task(REVIEWER_URL, query_task)
     logger.info("Query task sent: %s", query_task_id)
+    emit(8, "query_dispatched", f"Encrypted inquiry sent to Reviewer via A2A protocol", {
+        "task_id": query_task_id,
+        "ciphertext": encrypted_query[:32] + "..."
+    })
 
     # ── Step 8: poll for encrypted answer ────────────────────────────────────
+    emit(9, "awaiting_response", "Waiting for Secret Plan Reviewer analysis & response...")
     query_resp = await _poll_a2a_task(REVIEWER_URL, query_task_id)
     if query_resp.get("status", {}).get("state") == "failed":
         raise RuntimeError(f"Reviewer failed to answer query: {query_resp}")
 
     encrypted_answer = _extract_artifact_text(query_resp)
+    emit(9, "response_received", "AES-encrypted review response received from Reviewer", {
+        "ciphertext": encrypted_answer[:32] + "..."
+    })
 
     # ── Step 9: decrypt answer ────────────────────────────────────────────────
+    emit(10, "decrypt_response", "Decrypting Reviewer artifact with local ANN AES key...")
     raw_answer = decrypt_with_aes(encrypted_answer, aes_key_hex)
+    emit(10, "decrypted_plain", "Plaintext review decrypted successfully")
 
     # ── Step 10: log to MongoDB ───────────────────────────────────────────────
     interaction_ulid = str(ULID())
@@ -314,8 +363,10 @@ rewritten question, nothing else."""
         response=raw_answer,
         ann_model_ulid=model_ulid,
     )
+    emit(10, "logged_mongo", f"Session interaction logged to MongoDB (ULID: {interaction_ulid})")
 
     # ── Step 11: Gemini prettify ──────────────────────────────────────────────
+    emit(11, "finalize_report", "Generating final intelligence mission briefing via Gemini...")
     final_response = _gemini(
         f"""You are the Secret Plan Creator. You received this intelligence report
 about recent movies:
@@ -326,6 +377,7 @@ Rewrite it in the voice of a suave intelligence operative sharing a briefing.
 Keep it concise (≤ 150 words), engaging, and themed around movies as a cover
 story. Output only the briefing text."""
     )
+    emit(11, "briefing_ready", "Intelligence mission briefing finalized", {"briefing": final_response})
 
     return final_response
 

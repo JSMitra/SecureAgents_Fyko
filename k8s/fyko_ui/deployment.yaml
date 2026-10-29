@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fyko-ui
+  namespace: fyko
+  labels:
+    app: fyko-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fyko-ui
+  template:
+    metadata:
+      labels:
+        app: fyko-ui
+    spec:
+      containers:
+        - name: fyko-ui
+          image: fyko_ui:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+

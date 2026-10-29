@@ -145,7 +145,15 @@ async def interact(req: InteractRequest):
         if req.session_id:
             _sse_queues[req.session_id] = asyncio.Queue(maxsize=100)
 
-        response = await handle_user_message(req.message, session_id=req.session_id)
+        def event_callback(evt):
+            if req.session_id:
+                publish_step_event(req.session_id, evt)
+
+        response = await handle_user_message(
+            req.message,
+            session_id=req.session_id,
+            event_cb=event_callback if req.session_id else None,
+        )
 
         # Signal SSE stream that mission is done
         if req.session_id and req.session_id in _sse_queues:

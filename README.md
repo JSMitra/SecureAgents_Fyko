@@ -10,7 +10,11 @@ A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) re
                           ┌─────────────────────────────────────────────────────┐
                           │                   fyko-net / fyko namespace          │
                           │                                                     │
-  Client ──HTTP──►  ┌─────┴──────┐    AMQP    ┌──────────────┐                 │
+  User ──Browser──► ┌─────┴──────┐                                              │
+    (:3000)         │  fyko-ui   │                                              │
+                    └─────┬──────┘                                              │
+                          │ HTTP (/api/creator, /api/server)                    │
+                    ┌─────▼──────┐    AMQP    ┌──────────────┐                 │
                     │fyko-server │ ──────────► │   RabbitMQ   │                 │
                     │  :8000     │             │  :5672/:15672│                 │
                     └─────┬──────┘             └──────┬───────┘                 │
@@ -26,12 +30,14 @@ A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) re
                     │ MongoDB  │◄────────────────────┘                         │
                     │  :27017  │   (plan/review docs)                           │
                     └──────────┘                                                │
-                                                                                │
-                    ┌──────────────────┐   ┌──────────────────────┐             │
+                          ▲                                                     │
+                          │ MongoDB log                                         │
+                    ┌─────┴────────────┐   ┌──────────────────────┐             │
                     │secret-plan-      │   │secret-plan-          │             │
                     │creator  :9001    │◄──│reviewer  :9002       │             │
                     └──────────────────┘   └──────────────────────┘             │
-                          │                                                     │
+                          │                     ▲ A2A (RSA + ANN AES-256)       │
+                          └─────────────────────┘                               │
                           └─────────────────────────────────────────────────────┘
 ```
 
@@ -48,6 +54,7 @@ A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) re
 | `ann-generator` | — | `ann_generator:latest` | StatefulSet (2) |
 | `secret-plan-creator` | 9001 | `secret_plan_creator:latest` | Deployment (1) |
 | `secret-plan-reviewer` | 9002 | `secret_plan_reviewer:latest` | Deployment (1) |
+| `fyko-ui` | 3000 | `fyko_ui:latest` | Deployment (1) / NodePort 30080 |
 
 ---
 
@@ -66,6 +73,9 @@ docker compose up --build
 # 3. Verify
 curl http://localhost:8000/health
 
+# 4. Open Interactive Agent Web UI
+open http://localhost:3000
+
 # RabbitMQ management UI
 open http://localhost:15672   # user: fyko  pass: fykopass
 ```
@@ -78,8 +88,9 @@ open http://localhost:15672   # user: fyko  pass: fykopass
 eval $(minikube docker-env)
 docker build -t fyko_server:latest       ./fyko_server
 docker build -t ann_generator:latest     ./ann_generator
-docker build -t secret_plan_creator:latest ./fyko_clients -f fyko_clients/Dockerfile.creator
-docker build -t secret_plan_reviewer:latest ./fyko_clients -f fyko_clients/Dockerfile.reviewer
+docker build -t secret_plan_creator:latest ./fyko_clients -f fyko_clients/secret_plan_creator/Dockerfile
+docker build -t secret_plan_reviewer:latest ./fyko_clients -f fyko_clients/secret_plan_reviewer/Dockerfile
+docker build -t fyko_ui:latest              ./fyko_ui
 
 # 2. Apply manifests in dependency order
 kubectl apply -f k8s/namespace.yaml
@@ -108,6 +119,9 @@ kubectl apply -f k8s/secret_plan_creator/service.yaml
 
 kubectl apply -f k8s/secret_plan_reviewer/deployment.yaml
 kubectl apply -f k8s/secret_plan_reviewer/service.yaml
+
+kubectl apply -f k8s/fyko_ui/deployment.yaml
+kubectl apply -f k8s/fyko_ui/service.yaml
 
 # 3. Check rollout
 kubectl -n fyko get pods -w

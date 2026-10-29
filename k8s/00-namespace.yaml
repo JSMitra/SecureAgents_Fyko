@@ -1,6 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: fyko
+  name: fyko-cluster
   labels:
     app.kubernetes.io/part-of: secure-agents-fyko
+

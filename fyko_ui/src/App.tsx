@@ -87,7 +87,7 @@ export const App: React.FC = () => {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-[#060910] py-4 text-center text-xs font-mono text-slate-500">
-        FYKO_SERVER & SECURE_AGENTS ARCHITECTURE • MITRA J.S. THESIS IMPLEMENTATION • A2A PROTOCOL
+        FYKO_SERVER & SECURE_AGENTS ARCHITECTURE • SECRET PLAN EXCHANGE & EVALUATION • MITRA J.S. THESIS IMPLEMENTATION
       </footer>
     </div>
   );

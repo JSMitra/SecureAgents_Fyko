@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Secret Plan Reviewer",
-    description="FYKO intelligence operative — secure movie-knowledge reviewer",
+    description="FYKO intelligence operative — Secret Plan Reviewer agent",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -87,7 +87,7 @@ async def agent_card():
     return {
         "name": "Secret Plan Reviewer",
         "description": (
-            "FYKO-secured reviewer that answers movie intelligence queries "
+            "FYKO-secured reviewer that analyzes and evaluates secret operational plans and secure queries "
             "using ANN-derived AES keys shared via RSA-encrypted A2A tasks."
         ),
         "version": "1.0.0",
@@ -98,9 +98,9 @@ async def agent_card():
         },
         "skills": [
             {
-                "id": "movie_review",
-                "name": "Secure Movie Review",
-                "description": "Receive and answer AES-encrypted movie questions.",
+                "id": "secret_plan_review",
+                "name": "Secret Plan Evaluation & Strategic Review",
+                "description": "Receive, decrypt, and strategically evaluate secret plans and classified queries.",
             }
         ],
     }

@@ -4,7 +4,7 @@ main.py — Secret Plan Creator FastAPI application.
 Endpoints
 ---------
 GET  /.well-known/agent.json    Agent Card (A2A discovery)
-POST /interact                  Human user sends a movie question
+POST /interact                  Human user sends a secret plan or query
 GET  /interact/stream           SSE stream of mission step events (for UI)
 POST /ann-callback              FykoServer ANN completion callback
 POST /a2a/tasks/send            (optional) Receive A2A tasks from peers
@@ -45,6 +45,12 @@ def publish_step_event(session_id: str, event: dict) -> None:
         except asyncio.QueueFull:
             pass
 
+
+async def _delayed_cleanup_queue(session_id: str, delay: float = 10.0) -> None:
+    """Graceful deferred cleanup of session SSE queue."""
+    await asyncio.sleep(delay)
+    _sse_queues.pop(session_id, None)
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -62,7 +68,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Secret Plan Creator",
-    description="FYKO intelligence operative — movie cover-story agent",
+    description="FYKO intelligence operative — Secret Plan Creator agent",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -107,8 +113,8 @@ async def agent_card():
     return {
         "name": "Secret Plan Creator",
         "description": (
-            "An AI agent operative that uses FYKO ANN-derived AES keys "
-            "to securely query the Secret Plan Reviewer about recent movies."
+            "An AI agent that formulates secret plans and secure queries, "
+            "using FYKO ANN-derived AES keys to securely transmit them to the Secret Plan Reviewer."
         ),
         "version": "1.0.0",
         "url": "http://secret-plan-creator:9001",
@@ -118,9 +124,9 @@ async def agent_card():
         },
         "skills": [
             {
-                "id": "movie_query",
-                "name": "Movie Intelligence Query",
-                "description": "Ask about the latest movies using secure A2A channel.",
+                "id": "secret_plan_query",
+                "name": "Secret Plan Formulation & Query",
+                "description": "Formulate secret plans and queries transmitted via ANN-AES encrypted A2A channel.",
             }
         ],
     }
@@ -135,14 +141,14 @@ async def health():
 async def interact(req: InteractRequest):
     """
     Entry point for human users.
-    Accepts a natural-language movie question and returns the secure
-    answer obtained from the Secret Plan Reviewer.
+    Accepts a secret operational plan or secure query and returns the
+    decrypted strategic evaluation obtained from the Secret Plan Reviewer.
     """
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message must not be empty")
     try:
-        # Register SSE queue for this session if provided
-        if req.session_id:
+        # Register SSE queue for this session if not already registered
+        if req.session_id and req.session_id not in _sse_queues:
             _sse_queues[req.session_id] = asyncio.Queue(maxsize=100)
 
         def event_callback(evt):
@@ -171,9 +177,9 @@ async def interact(req: InteractRequest):
             publish_step_event(req.session_id, {"type": "error", "message": str(exc)})
         raise HTTPException(status_code=500, detail=str(exc))
     finally:
-        # Clean up queue after response is sent
+        # Gracefully cleanup queue with delay so pending SSE events drain
         if req.session_id:
-            _sse_queues.pop(req.session_id, None)
+            asyncio.create_task(_delayed_cleanup_queue(req.session_id))
 
 
 @app.get("/interact/stream")

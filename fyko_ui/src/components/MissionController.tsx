@@ -8,9 +8,9 @@ interface MissionControllerProps {
 }
 
 const PRESET_QUERIES = [
-  "What are the top critically acclaimed sci-fi and thriller movies released in the last 12 months?",
-  "Tell me about the biggest box-office blockbuster espionage movies recently.",
-  "Which recent award-winning cinema releases are must-watch for intelligence operatives?",
+  "Operation Chimera: Multi-region zero-trust consensus and automated failover protocol across edge clusters.",
+  "Project Quantum-Shield: Dynamic ANN neural layer weight re-calibration and key rotation cadence.",
+  "Tactical Assessment: Autonomous agent negotiation strategy under intermittent network partitions and latency spikes.",
 ];
 
 export const MissionController: React.FC<MissionControllerProps> = ({
@@ -19,7 +19,7 @@ export const MissionController: React.FC<MissionControllerProps> = ({
   onCancel,
 }) => {
   const [prompt, setPrompt] = useState(
-    'What are the most anticipated espionage and action thriller movies released recently?'
+    'Operation Aegis: Deploy distributed cryptographic verification nodes across regional clusters to detect anomalous key derivation requests.'
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,11 +33,11 @@ export const MissionController: React.FC<MissionControllerProps> = ({
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xs font-mono uppercase tracking-widest text-slate-300 flex items-center gap-2">
           <MessageSquare className="w-4 h-4 text-cyan-400" />
-          Mission Instruction Dispatcher
+          Secret Plan & Query Dispatcher
         </h2>
         <span className="text-[11px] font-mono text-cyan-400 flex items-center gap-1">
           <Sparkles className="w-3.5 h-3.5" />
-          A2A Cover Story Protocol
+          A2A Neural Cryptography Protocol
         </span>
       </div>
 
@@ -48,7 +48,7 @@ export const MissionController: React.FC<MissionControllerProps> = ({
             onChange={(e) => setPrompt(e.target.value)}
             disabled={isRunning}
             rows={3}
-            placeholder="Enter movie intelligence inquiry for Secret Plan Creator..."
+            placeholder="Enter a secret operational plan, strategic query, or classified proposal for evaluation..."
             className="w-full bg-[#0a0f1d] border border-slate-700/80 rounded-lg p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 font-sans resize-none transition-all disabled:opacity-50"
           />
         </div>

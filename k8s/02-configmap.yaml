@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fyko-config
-  namespace: fyko
+  namespace: fyko-cluster
 data:
   POSTGRES_USER: "fyko"
   POSTGRES_DB: "fykoDb"
@@ -13,3 +13,4 @@ data:
   FYKO_SERVER_URL: "http://fyko-server:8000"
   REVIEWER_URL: "http://secret-plan-reviewer:9002"
   CREATOR_URL: "http://secret-plan-creator:9001"
+

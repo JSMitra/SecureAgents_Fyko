@@ -51,7 +51,7 @@ export const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-400 mb-3">
-            Requests ANN model, derives dynamic AES-256 key, encrypts query, and logs interaction.
+            Formulates secret plan or query, derives dynamic ANN AES-256 key, encrypts payload, and logs audit trail.
           </p>
           <div className="text-[11px] font-mono bg-black/40 p-2 rounded border border-slate-800/80 space-y-1">
             <div className="text-slate-400 flex justify-between">
@@ -123,7 +123,7 @@ export const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
             </span>
           </div>
           <p className="text-xs text-slate-400 mb-3">
-            Decrypts RSA key-share, fetches same ANN model, decrypts query, calls Gemini, re-encrypts.
+            Decrypts RSA key-share, synchronizes ANN model, evaluates plan & risks via Gemini, and re-encrypts.
           </p>
           <div className="text-[11px] font-mono bg-black/40 p-2 rounded border border-slate-800/80 space-y-1">
             <div className="text-slate-400 flex justify-between">
@@ -158,7 +158,7 @@ export const NetworkFlowVisualizer: React.FC<NetworkFlowVisualizerProps> = ({
           ) : isA2AAesActive ? (
             <span className="text-emerald-400 font-bold flex items-center gap-1">
               <Send className="w-3.5 h-3.5" />
-              ANN-AES-256 ENCRYPTED A2A MISSION PAYLOAD
+              ANN-AES-256 ENCRYPTED A2A SECRET PLAN / QUERY
             </span>
           ) : (
             <span className="text-slate-500">IDLE (AWAITING USER INSTRUCTION)</span>

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: ann-generator
-  namespace: fyko
+  namespace: fyko-cluster
 spec:
   serviceName: ann-generator
   replicas: 2
@@ -28,3 +28,4 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+

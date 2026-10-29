@@ -3,14 +3,14 @@ agent.py — Secret Plan Creator core logic.
 
 Responsibilities:
   1. RSA key-pair generation + registration in PostgreSQL on startup.
-  2. Handle a human user's movie-related question (/interact):
+  2. Handle a human user's secret plan or query (/interact):
        a. Request ANN from FykoServer (callback or poll until ready)
-       b. Download .pkl model, derive AES key
+       b. Download .pkl model, derive AES-256 key
        c. RSA-encrypt key material → send to Reviewer via A2A
-       d. AES-encrypt user query   → send to Reviewer via A2A
-       e. Poll Reviewer for answer, decrypt, log to MongoDB, return to user
+       d. AES-encrypt secret plan/query → send to Reviewer via A2A
+       e. Poll Reviewer for evaluation, decrypt, log to MongoDB, return briefing to user
   3. Handle POST /ann-callback from FykoServer.
-  4. Use Gemini LLM to refine vague queries and prettify responses.
+  4. Use Gemini LLM to formulate structured plans and synthesize executive reviews.
 """
 
 import asyncio
@@ -218,7 +218,7 @@ async def handle_user_message(
     event_cb: Optional[Any] = None,
 ) -> str:
     """
-    Full end-to-end flow for a human user's movie question.
+    Full end-to-end flow for a human user's  question.
     Returns the final (decrypted, LLM-refined) answer as a string.
     Emits real-time progress events via event_cb if supplied.
     """
@@ -237,19 +237,16 @@ async def handle_user_message(
                 logger.warning("Failed to emit step event: %s", e)
 
     # ── Step 1: refine query with Gemini ─────────────────────────────────────
-    emit(1, "query_refinement", "Refining user query under intelligence operative cover...")
+    emit(1, "query_refinement", "Structuring and refining secret plan or query for encrypted transmission...")
     refined_query = _gemini(
-        f"""You are the Secret Plan Creator — an intelligence operative whose cover
-is asking about the latest movies.  A contact sent you this message:
+        f"""You are the Secret Plan Creator — an AI agent that formulates classified operational plans and strategic queries. A user has submitted this plan or inquiry:
 
 "{raw_message}"
 
-Rewrite it as a crisp, specific question about recent movies (released in the
-last 12 months) that an analyst could answer concisely.  Output only the
-rewritten question, nothing else."""
+Structure and refine this into a clear, detailed, and rigorous secret operational plan or classified inquiry for strategic evaluation by the Secret Plan Reviewer. Output only the structured plan or query, nothing else."""
     )
-    logger.info("Refined query: %s", refined_query)
-    emit(1, "query_refined", f"Cover query formulated: '{refined_query}'", {"query": refined_query})
+    logger.info("Refined secret plan/query: %s", refined_query)
+    emit(1, "query_refined", f"Secret plan/query formulated: '{refined_query}'", {"query": refined_query})
 
     # ── Step 2: request ANN from FykoServer ──────────────────────────────────
     emit(2, "ann_requested", "Initiating ANN model generation request with FykoServer...")
@@ -323,7 +320,7 @@ rewritten question, nothing else."""
     emit(7, "key_share_ack", "Reviewer downloaded ANN model & synchronized AES key")
 
     # ── Step 7: AES-encrypt query → send to Reviewer ─────────────────────────
-    emit(8, "query_encrypt", "Encrypting movie inquiry using ANN-derived AES key...")
+    emit(8, "query_encrypt", "Encrypting secret plan / query payload using ANN-derived AES-256 key...")
     encrypted_query = encrypt_with_aes(refined_query, aes_key_hex)
     query_task_id   = _new_task_id()
     query_payload   = json.dumps({
@@ -334,24 +331,24 @@ rewritten question, nothing else."""
     query_task = _build_task(query_task_id, query_payload)
     await _send_a2a_task(REVIEWER_URL, query_task)
     logger.info("Query task sent: %s", query_task_id)
-    emit(8, "query_dispatched", f"Encrypted inquiry sent to Reviewer via A2A protocol", {
+    emit(8, "query_dispatched", f"Encrypted secret plan sent to Reviewer via A2A protocol", {
         "task_id": query_task_id,
         "ciphertext": encrypted_query[:32] + "..."
     })
 
     # ── Step 8: poll for encrypted answer ────────────────────────────────────
-    emit(9, "awaiting_response", "Waiting for Secret Plan Reviewer analysis & response...")
+    emit(9, "awaiting_response", "Waiting for Secret Plan Reviewer analysis & evaluation...")
     query_resp = await _poll_a2a_task(REVIEWER_URL, query_task_id)
     if query_resp.get("status", {}).get("state") == "failed":
-        raise RuntimeError(f"Reviewer failed to answer query: {query_resp}")
+        raise RuntimeError(f"Reviewer failed to evaluate plan: {query_resp}")
 
     encrypted_answer = _extract_artifact_text(query_resp)
-    emit(9, "response_received", "AES-encrypted review response received from Reviewer", {
+    emit(9, "response_received", "AES-encrypted evaluation response received from Reviewer", {
         "ciphertext": encrypted_answer[:32] + "..."
     })
 
     # ── Step 9: decrypt answer ────────────────────────────────────────────────
-    emit(10, "decrypt_response", "Decrypting Reviewer artifact with local ANN AES key...")
+    emit(10, "decrypt_response", "Decrypting Reviewer evaluation with local ANN AES key...")
     raw_answer = decrypt_with_aes(encrypted_answer, aes_key_hex)
     emit(10, "decrypted_plain", "Plaintext review decrypted successfully")
 
@@ -363,21 +360,18 @@ rewritten question, nothing else."""
         response=raw_answer,
         ann_model_ulid=model_ulid,
     )
-    emit(10, "logged_mongo", f"Session interaction logged to MongoDB (ULID: {interaction_ulid})")
+    emit(10, "logged_mongo", f"Secret plan & evaluation logged to MongoDB audit trail (ULID: {interaction_ulid})")
 
     # ── Step 11: Gemini prettify ──────────────────────────────────────────────
-    emit(11, "finalize_report", "Generating final intelligence mission briefing via Gemini...")
+    emit(11, "finalize_report", "Synthesizing final strategic briefing via Gemini...")
     final_response = _gemini(
-        f"""You are the Secret Plan Creator. You received this intelligence report
-about recent movies:
+        f"""You are the Secret Plan Creator. You have received and decrypted the strategic review and assessment from the Secret Plan Reviewer:
 
 "{raw_answer}"
 
-Rewrite it in the voice of a suave intelligence operative sharing a briefing.
-Keep it concise (≤ 150 words), engaging, and themed around movies as a cover
-story. Output only the briefing text."""
+Synthesize this evaluation into an executive mission briefing for the user. Highlight strategic feasibility, risk assessment, key recommendations, and final status. Output only the briefing text."""
     )
-    emit(11, "briefing_ready", "Intelligence mission briefing finalized", {"briefing": final_response})
+    emit(11, "briefing_ready", "Strategic plan review briefing finalized", {"briefing": final_response})
 
     return final_response
 

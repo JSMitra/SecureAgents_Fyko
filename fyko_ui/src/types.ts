@@ -31,5 +31,7 @@ export interface MissionResult {
   rawPlaintext?: string;
   briefing: string;
   mongoUlid?: string;
+  sourceType?: 'live' | 'simulation';
+  errorMessage?: string;
 }
 

@@ -4,11 +4,11 @@ import { MissionStep, MissionResult } from '../types';
 const INITIAL_STEPS: MissionStep[] = [
   {
     id: 1,
-    label: 'Query Ingestion & Cover Transformation',
+    label: 'Secret Plan Formulation & Structuring',
     source: 'User',
     target: 'Creator',
     protocol: 'HTTP',
-    description: 'Human user inputs inquiry; Secret Plan Creator formats into classified movie cover-story.',
+    description: 'Human user submits secret plan or query; Creator structures it for cryptographic transmission.',
     status: 'pending',
   },
   {
@@ -67,38 +67,38 @@ const INITIAL_STEPS: MissionStep[] = [
   },
   {
     id: 8,
-    label: 'A2A AES Encrypted Query Transmission',
+    label: 'A2A AES Encrypted Secret Plan Transmission',
     source: 'Creator',
     target: 'Reviewer',
     protocol: 'A2A / AES-256',
-    description: 'Reviewer recovers ANN model & synchronizes AES key. Creator sends AES-encrypted movie inquiry.',
+    description: 'Reviewer recovers ANN model & synchronizes AES key. Creator transmits AES-256 encrypted secret plan.',
     status: 'pending',
   },
   {
     id: 9,
-    label: 'Reviewer LLM Evaluation & Cryptographic Re-Encryption',
+    label: 'Reviewer Strategic Evaluation & Cryptographic Re-Encryption',
     source: 'Reviewer',
     target: 'Reviewer',
     protocol: 'Local',
-    description: 'Reviewer decrypts inquiry, queries Gemini LLM intelligence engine, and encrypts answer with symmetric ANN AES key.',
+    description: 'Reviewer decrypts plan, executes strategic evaluation via Gemini LLM, and encrypts review with symmetric ANN AES key.',
     status: 'pending',
   },
   {
     id: 10,
-    label: 'Encrypted Intelligence Response & Decryption',
+    label: 'Encrypted Review Receipt & Decryption',
     source: 'Reviewer',
     target: 'Creator',
     protocol: 'A2A / AES-256',
-    description: 'Reviewer returns encrypted artifact. Creator decrypts plaintext response and logs audit entry in MongoDB.',
+    description: 'Reviewer returns encrypted evaluation artifact. Creator decrypts plaintext review and logs audit entry in MongoDB.',
     status: 'pending',
   },
   {
     id: 11,
-    label: 'Final Mission Briefing Synthesis',
+    label: 'Final Strategic Review Briefing',
     source: 'Creator',
     target: 'User',
     protocol: 'HTTP',
-    description: 'Creator synthesizes final operative briefing and reveals mission intelligence to user.',
+    description: 'Creator synthesizes final executive assessment and reveals evaluation briefing to user.',
     status: 'pending',
   },
 ];
@@ -175,7 +175,7 @@ export function useMission() {
     // Step 1
     setActiveStepId(1);
     updateStep(1, 'active');
-    addLog('Transforming raw prompt into operative movie cover query...', 'info');
+    addLog('Structuring secret plan and preparing cryptographic envelope...', 'info');
 
     // Fallback simulation timer tracker while the real backend executes
     let currentStep = 1;
@@ -208,10 +208,10 @@ export function useMission() {
           addLog('Sent RSA-OAEP encrypted key_share task to Reviewer via A2A protocol.', 'network');
           updateStep(7, 'completed', 'RSA-OAEP(ULID + Seed)');
         } else if (currentStep === 8) {
-          addLog('Dispatched AES-256 encrypted query payload to Reviewer.', 'crypto');
+          addLog('Dispatched AES-256 encrypted secret plan payload to Reviewer.', 'crypto');
           updateStep(8, 'completed', 'AES-ECB Ciphertext: 7b2a9f...');
         } else if (currentStep === 9) {
-          addLog('Reviewer processing query via Gemini LLM & encrypting response...', 'info');
+          addLog('Reviewer evaluating secret plan via Gemini LLM & encrypting review...', 'info');
         }
       }
     }, 1200);
@@ -239,13 +239,13 @@ export function useMission() {
           updateStep(i, 'completed');
         }
         setActiveStepId(11);
-        addLog('Mission completed: Decrypted Intelligence briefing ready.', 'success');
+        addLog('Mission completed: Decrypted strategic plan evaluation ready.', 'success');
 
         setResult({
           query: userPrompt,
           modelUlid: '01J4X8KM79NV2B104PLQ9',
           aesKeyMasked: '7f91a2...c38b09',
-          briefing: json.response || 'Mission accomplished. Operative intelligence report received.',
+          briefing: json.response || 'Mission accomplished. Secret plan evaluation received.',
           mongoUlid: '01J4X8KM79NV2B104AUDIT',
         });
       } else {
@@ -270,10 +270,10 @@ export function useMission() {
           query: userPrompt,
           modelUlid: '01JAX8KM79NV2B104PLQ9',
           aesKeyMasked: 'a4f91b...88c201',
-          briefing: `CONFIDENTIAL INTEL BRIEFING: Based on covert analysis of recent cinema distributions, premier reconnaissance highlights "Dune: Part Two", "Civil War", "Furiosa", and "Deadpool & Wolverine" as dominating the cultural sector. Cryptographic transmission authenticated through FYKO Neural AES key exchange.`,
+          briefing: `STRATEGIC PLAN EVALUATION REPORT:\n\n1. Operational Feasibility: HIGH. The proposed secret plan demonstrates robust architecture and well-defined control parameters.\n2. Risk Assessment: MEDIUM-LOW. Primary risk factors include network latency during peer synchronization and key rotation cadence. Mitigation requires active worker pooling.\n3. Recommendation: PROCEED WITH PHASE 1. Recommended next step is establishing redundant prefetch buffers and verified audit checkpoints in MongoDB. Transmission verified via ANN-AES key.`,
           mongoUlid: '01JAX8KM79AUDIT_9921',
         });
-        addLog('Simulated mission intelligence generated and decrypted.', 'success');
+        addLog('Simulated strategic evaluation generated and decrypted.', 'success');
       }
     } finally {
       if (sse) sse.close();

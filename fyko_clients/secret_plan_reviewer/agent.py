@@ -185,11 +185,17 @@ async def _handle_query(task_id: str, payload: dict) -> None:
 
         # Ask Gemini
         answer = _gemini(
-            f"""You are a knowledgeable film critic and analyst.
-Answer the following question about recent movies concisely and accurately
-(aim for 3-5 sentences):
+            f"""You are the Secret Plan Reviewer — an expert strategic analysis and intelligence evaluation agent.
+Review and evaluate the following secret operational plan or classified inquiry in depth:
 
-{plain_query}"""
+{plain_query}
+
+Provide a structured, analytical, and objective evaluation covering:
+1. Operational Feasibility & Technical Merit
+2. Strategic Risk Assessment & Potential Vulnerabilities
+3. Actionable Recommendations & Next Steps
+
+Keep your evaluation concise, authoritative, and professional (aim for 3-5 comprehensive paragraphs)."""
         )
 
         # Encrypt the answer

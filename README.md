@@ -10,7 +10,7 @@ A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) re
 
 ```
                           ┌─────────────────────────────────────────────────────┐
-                          │                   fyko-net / fyko namespace          │
+                          │                   fyko-net / fyko-cluster namespace  │
                           │                                                     │
   User ──Browser──► ┌─────┴──────┐                                              │
     (:3000)         │  fyko-ui   │                                              │
@@ -82,54 +82,75 @@ open http://localhost:3000
 open http://localhost:15672   # user: fyko  pass: fykopass
 ```
 
-### Kubernetes (minikube / any cluster)
+### Kubernetes with KinD (Recommended)
+
+You can run the all-in-one deploy script:
+```bash
+./scripts/deploy-kind.sh
+```
+
+Or step-by-step:
+```bash
+# 1. Create KinD cluster with port mapping (maps NodePort 30080 to localhost:3000)
+kind create cluster --config k8s/kind-config.yaml
+
+# 2. Build local docker images
+docker build -t fyko_server:latest          ./fyko_server
+docker build -t ann_generator:latest        ./ann_generator
+docker build -t secret_plan_creator:latest  ./fyko_clients -f fyko_clients/secret_plan_creator/Dockerfile
+docker build -t secret_plan_reviewer:latest ./fyko_clients -f fyko_clients/secret_plan_reviewer/Dockerfile
+docker build -t fyko_ui:latest              ./fyko_ui
+
+# 3. Load images into the KinD cluster
+kind load docker-image fyko_server:latest --name fyko-cluster
+kind load docker-image ann_generator:latest --name fyko-cluster
+kind load docker-image secret_plan_creator:latest --name fyko-cluster
+kind load docker-image secret_plan_reviewer:latest --name fyko-cluster
+kind load docker-image fyko_ui:latest --name fyko-cluster
+
+# 4. Apply all manifests (flat numbered structure applies in exact order)
+kubectl apply -f k8s/
+
+# Or apply sequentially:
+# kubectl apply -f k8s/00-namespace.yaml
+# kubectl apply -f k8s/01-secrets.yaml
+# kubectl apply -f k8s/02-configmap.yaml
+# kubectl apply -f k8s/03-postgres.yaml
+# kubectl apply -f k8s/04-mongodb.yaml
+# kubectl apply -f k8s/05-rabbitmq.yaml
+# kubectl apply -f k8s/06-fyko-server.yaml
+# kubectl apply -f k8s/07-ann-generator.yaml
+# kubectl apply -f k8s/08-secret-plan-creator.yaml
+# kubectl apply -f k8s/09-secret-plan-reviewer.yaml
+# kubectl apply -f k8s/10-fyko-ui.yaml
+
+# 5. Check status
+kubectl -n fyko-cluster get pods -w
+
+# 6. Open UI directly
+open http://localhost:3000
+```
+
+### Kubernetes (Minikube / Generic Cluster)
 
 ```bash
 # 1. Ensure local images are available to the cluster
 #    For minikube:
 eval $(minikube docker-env)
-docker build -t fyko_server:latest       ./fyko_server
-docker build -t ann_generator:latest     ./ann_generator
-docker build -t secret_plan_creator:latest ./fyko_clients -f fyko_clients/secret_plan_creator/Dockerfile
+docker build -t fyko_server:latest          ./fyko_server
+docker build -t ann_generator:latest        ./ann_generator
+docker build -t secret_plan_creator:latest  ./fyko_clients -f fyko_clients/secret_plan_creator/Dockerfile
 docker build -t secret_plan_reviewer:latest ./fyko_clients -f fyko_clients/secret_plan_reviewer/Dockerfile
 docker build -t fyko_ui:latest              ./fyko_ui
 
-# 2. Apply manifests in dependency order
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/secrets.yaml
-kubectl apply -f k8s/configmap.yaml
-
-kubectl apply -f k8s/postgres/init-configmap.yaml
-kubectl apply -f k8s/postgres/pvc.yaml
-kubectl apply -f k8s/postgres/statefulset.yaml
-kubectl apply -f k8s/postgres/service.yaml
-
-kubectl apply -f k8s/mongodb/pvc.yaml
-kubectl apply -f k8s/mongodb/statefulset.yaml
-kubectl apply -f k8s/mongodb/service.yaml
-
-kubectl apply -f k8s/rabbitmq/deployment.yaml
-kubectl apply -f k8s/rabbitmq/service.yaml
-
-kubectl apply -f k8s/fyko_server/deployment.yaml
-kubectl apply -f k8s/fyko_server/service.yaml
-
-kubectl apply -f k8s/ann_generator/statefulset.yaml
-
-kubectl apply -f k8s/secret_plan_creator/deployment.yaml
-kubectl apply -f k8s/secret_plan_creator/service.yaml
-
-kubectl apply -f k8s/secret_plan_reviewer/deployment.yaml
-kubectl apply -f k8s/secret_plan_reviewer/service.yaml
-
-kubectl apply -f k8s/fyko_ui/deployment.yaml
-kubectl apply -f k8s/fyko_ui/service.yaml
+# 2. Apply all manifests
+kubectl apply -f k8s/
 
 # 3. Check rollout
-kubectl -n fyko get pods -w
+kubectl -n fyko-cluster get pods -w
 
-# 4. Forward fyko-server locally
-kubectl -n fyko port-forward svc/fyko-server 8000:8000
+# 4. Forward fyko-server locally (optional)
+kubectl -n fyko-cluster port-forward svc/fyko-server 8000:8000
 ```
 
 ---
@@ -184,18 +205,28 @@ SecureAgents_Fyko/
 ├── fyko_server/          # FastAPI server — REST API + RabbitMQ publisher
 ├── ann_generator/        # Worker — consumes RabbitMQ, runs ANN inference
 ├── fyko_clients/         # Agent clients (creator & reviewer)
-│   └── shared/           # Shared fyko_ann helper
-├── k8s/                  # Kubernetes manifests (namespace: fyko)
-│   ├── namespace.yaml
-│   ├── configmap.yaml
-│   ├── secrets.yaml
-│   ├── postgres/
-│   ├── mongodb/
-│   ├── rabbitmq/
-│   ├── fyko_server/
-│   ├── ann_generator/
+│   ├── shared/           # Cryptography & FYKO ANN key helpers
 │   ├── secret_plan_creator/
 │   └── secret_plan_reviewer/
+├── fyko_ui/              # React 18 + Tailwind spy dashboard UI
+├── kind/
+│   └── kind-config.yaml  # KinD cluster port mapping configuration
+├── k8s/                  # Flat numbered Kubernetes manifests (namespace: fyko-cluster)
+│   ├── 00-namespace.yaml
+│   ├── 01-secrets.yaml
+│   ├── 02-configmap.yaml
+│   ├── 03-postgres.yaml
+│   ├── 04-mongodb.yaml
+│   ├── 05-rabbitmq.yaml
+│   ├── 06-fyko-server.yaml
+│   ├── 07-ann-generator.yaml
+│   ├── 08-secret-plan-creator.yaml
+│   ├── 09-secret-plan-reviewer.yaml
+│   └── 10-fyko-ui.yaml
+├── scripts/
+│   └── deploy-kind.sh    # Automated KinD cluster build & deploy script
+├── sql/
+│   └── init.sql          # PostgreSQL DDL for docker-compose
 ├── docker-compose.yaml   # Local development stack
 ├── .env.example          # Environment variable template
 └── README.md

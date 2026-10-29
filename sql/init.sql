@@ -13,3 +13,4 @@ CREATE TABLE IF NOT EXISTS agent_keys (
     public_key_pem TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT NOW()
 );
+

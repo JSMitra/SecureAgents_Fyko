@@ -1,0 +1,12 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: fyko-cluster
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # Map fyko-ui NodePort (30080) directly to http://localhost:3000
+      - containerPort: 30080
+        hostPort: 3000
+        listenAddress: "0.0.0.0"
+        protocol: TCP
+

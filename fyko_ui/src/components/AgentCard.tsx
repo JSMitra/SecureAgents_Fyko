@@ -22,8 +22,8 @@ export const AgentCard: React.FC<AgentCardProps> = ({
 
   const roleName = isCreator ? 'Secret Plan Creator' : 'Secret Plan Reviewer';
   const roleSub = isCreator
-    ? 'Intelligence Operative (Cover: Movie Analyst)'
-    : 'Reviewer Operative (Cover: Cinema Analyst)';
+    ? 'Intelligence Operative (Strategic Plan Formulation)'
+    : 'Reviewer Operative (Plan Evaluation & Risk Assessment)';
   const port = isCreator ? '9001' : '9002';
 
   return (

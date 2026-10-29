@@ -26,7 +26,6 @@ from typing import Optional
 
 import httpx
 import google.generativeai as genai
-from python_ulid import ULID
 
 from shared.crypto_utils import (
     generate_rsa_keypair,
@@ -49,6 +48,17 @@ REVIEWER_URL    = os.getenv("REVIEWER_URL",    "http://secret-plan-reviewer:9002
 CREATOR_URL     = os.getenv("CREATOR_URL",     "http://secret-plan-creator:9001")
 GEMINI_API_KEY  = os.getenv("GEMINI_API_KEY",  "")
 AGENT_NAME      = "secret_plan_creator"
+
+# ── Pure-stdlib ULID generator (no third-party package required) ──────────────
+# Generates a 26-char Crockford Base-32 ULID: 10 timestamp chars + 16 random.
+_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+def _new_ulid() -> str:
+    ts = int(time.time() * 1000)
+    rand_bytes = uuid.uuid4().int
+    ts_part   = "".join(_CROCKFORD[(ts  >> (5 * i)) & 0x1F] for i in reversed(range(10)))
+    rand_part = "".join(_CROCKFORD[(rand_bytes >> (5 * i)) & 0x1F] for i in reversed(range(16)))
+    return ts_part + rand_part
 
 # ── Gemini setup ──────────────────────────────────────────────────────────────
 genai.configure(api_key=GEMINI_API_KEY)
@@ -159,7 +169,7 @@ async def _download_model(ulid: str):
 # ── A2A helpers ───────────────────────────────────────────────────────────────
 
 def _new_task_id() -> str:
-    return str(ULID())
+    return _new_ulid()
 
 
 def _build_task(task_id: str, text: str) -> dict:
@@ -353,7 +363,7 @@ Structure and refine this into a clear, detailed, and rigorous secret operationa
     emit(10, "decrypted_plain", "Plaintext review decrypted successfully")
 
     # ── Step 10: log to MongoDB ───────────────────────────────────────────────
-    interaction_ulid = str(ULID())
+    interaction_ulid = _new_ulid()
     log_query(
         ulid=interaction_ulid,
         query=refined_query,

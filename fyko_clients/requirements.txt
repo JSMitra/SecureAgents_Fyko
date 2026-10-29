@@ -23,4 +23,4 @@ aio-pika==9.4.1               # Async RabbitMQ client
 google-generativeai==0.7.2
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
-python-ulid==2.7.0            # ULID generation
+# python-ulid removed — ULID generation uses stdlib uuid + time (_new_ulid())

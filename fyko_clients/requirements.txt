@@ -1,0 +1,26 @@
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+httpx==0.27.0
+
+# ── Cryptography ──────────────────────────────────────────────────────────────
+cryptography==42.0.8          # RSA key pair (hazmat)
+pycryptodome==3.20.0          # AES-ECB (Crypto.Cipher.AES)
+
+# ── ML / ANN ──────────────────────────────────────────────────────────────────
+tensorflow==2.16.1
+numpy==1.26.4
+
+# ── Database ──────────────────────────────────────────────────────────────────
+psycopg2-binary==2.9.9        # PostgreSQL
+pymongo==4.7.2                # MongoDB
+
+# ── Messaging ─────────────────────────────────────────────────────────────────
+aio-pika==9.4.1               # Async RabbitMQ client
+
+# ── LLM ───────────────────────────────────────────────────────────────────────
+google-generativeai==0.7.2
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+python-ulid==2.7.0            # ULID generation

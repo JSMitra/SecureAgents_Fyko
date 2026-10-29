@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secret-plan-reviewer
+  namespace: fyko
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secret-plan-reviewer
+  template:
+    metadata:
+      labels:
+        app: secret-plan-reviewer
+    spec:
+      containers:
+        - name: secret-plan-reviewer
+          image: secret_plan_reviewer:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9002
+          envFrom:
+            - configMapRef:
+                name: fyko-config
+            - secretRef:
+                name: fyko-secrets
+          env:
+            - name: AGENT_NAME
+              value: "secret_plan_reviewer"
+            - name: PORT
+              value: "9002"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9002
+            initialDelaySeconds: 20
+            periodSeconds: 15

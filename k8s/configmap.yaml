@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fyko-config
+  namespace: fyko
+data:
+  POSTGRES_USER: "fyko"
+  POSTGRES_DB: "fykoDb"
+  POSTGRES_URL: "postgresql+asyncpg://fyko:fykopass@postgres:5432/fykoDb"
+  POSTGRES_URL_SYNC: "postgresql://fyko:fykopass@postgres:5432/fykoDb"
+  MONGODB_URL: "mongodb://fyko:fykopass@mongodb:27017/"
+  RABBITMQ_URL: "amqp://fyko:fykopass@rabbitmq:5672/"
+  FYKO_SERVER_URL: "http://fyko-server:8000"
+  REVIEWER_URL: "http://secret-plan-reviewer:9002"
+  CREATOR_URL: "http://secret-plan-creator:9001"

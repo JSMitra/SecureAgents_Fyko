@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secret-plan-creator
+  namespace: fyko
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: secret-plan-creator
+  template:
+    metadata:
+      labels:
+        app: secret-plan-creator
+    spec:
+      containers:
+        - name: secret-plan-creator
+          image: secret_plan_creator:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 9001
+          envFrom:
+            - configMapRef:
+                name: fyko-config
+            - secretRef:
+                name: fyko-secrets
+          env:
+            - name: AGENT_NAME
+              value: "secret_plan_creator"
+            - name: PORT
+              value: "9001"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9001
+            initialDelaySeconds: 20
+            periodSeconds: 15

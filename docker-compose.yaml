@@ -1,0 +1,172 @@
+version: "3.9"
+
+networks:
+  fyko-net:
+    driver: bridge
+
+services:
+
+  postgres:
+    image: postgres:15
+    networks:
+      - fyko-net
+    environment:
+      POSTGRES_USER: fyko
+      POSTGRES_DB: fykoDb
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./k8s/postgres/init-configmap-raw.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fyko -d fykoDb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:6
+    networks:
+      - fyko-net
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: fyko
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    networks:
+      - fyko-net
+    environment:
+      RABBITMQ_DEFAULT_USER: fyko
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  fyko-server:
+    build:
+      context: ./fyko_server
+      dockerfile: Dockerfile
+    image: fyko_server:latest
+    networks:
+      - fyko-net
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: fyko
+      POSTGRES_DB: fykoDb
+      POSTGRES_URL: postgresql+asyncpg://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      POSTGRES_URL_SYNC: postgresql://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      MONGODB_URL: mongodb://fyko:${MONGO_PASSWORD}@mongodb:27017/
+      RABBITMQ_URL: amqp://fyko:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      FYKO_SERVER_URL: http://fyko-server:8000
+      REVIEWER_URL: http://secret-plan-reviewer:9002
+      CREATOR_URL: http://secret-plan-creator:9001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  ann-generator:
+    build:
+      context: ./ann_generator
+      dockerfile: Dockerfile
+    image: ann_generator:latest
+    networks:
+      - fyko-net
+    env_file:
+      - .env
+    environment:
+      POSTGRES_URL: postgresql+asyncpg://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      POSTGRES_URL_SYNC: postgresql://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      MONGODB_URL: mongodb://fyko:${MONGO_PASSWORD}@mongodb:27017/
+      RABBITMQ_URL: amqp://fyko:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      FYKO_SERVER_URL: http://fyko-server:8000
+      REVIEWER_URL: http://secret-plan-reviewer:9002
+      CREATOR_URL: http://secret-plan-creator:9001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+  secret-plan-creator:
+    build:
+      context: ./fyko_clients
+      dockerfile: secret_plan_creator/Dockerfile
+    image: secret_plan_creator:latest
+    networks:
+      - fyko-net
+    ports:
+      - "9001:9001"
+    env_file:
+      - .env
+    environment:
+      AGENT_NAME: secret_plan_creator
+      PORT: "9001"
+      POSTGRES_URL: postgresql+asyncpg://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      POSTGRES_URL_SYNC: postgresql://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      MONGODB_URL: mongodb://fyko:${MONGO_PASSWORD}@mongodb:27017/
+      RABBITMQ_URL: amqp://fyko:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      FYKO_SERVER_URL: http://fyko-server:8000
+      REVIEWER_URL: http://secret-plan-reviewer:9002
+      CREATOR_URL: http://secret-plan-creator:9001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  secret-plan-reviewer:
+    build:
+      context: ./fyko_clients
+      dockerfile: secret_plan_reviewer/Dockerfile
+    image: secret_plan_reviewer:latest
+    networks:
+      - fyko-net
+    ports:
+      - "9002:9002"
+    env_file:
+      - .env
+    environment:
+      AGENT_NAME: secret_plan_reviewer
+      PORT: "9002"
+      POSTGRES_URL: postgresql+asyncpg://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      POSTGRES_URL_SYNC: postgresql://fyko:${POSTGRES_PASSWORD}@postgres:5432/fykoDb
+      MONGODB_URL: mongodb://fyko:${MONGO_PASSWORD}@mongodb:27017/
+      RABBITMQ_URL: amqp://fyko:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      FYKO_SERVER_URL: http://fyko-server:8000
+      REVIEWER_URL: http://secret-plan-reviewer:9002
+      CREATOR_URL: http://secret-plan-creator:9001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  mongodb-data:

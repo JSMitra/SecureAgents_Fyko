@@ -1,4 +1,4 @@
-# SecureAgents Fyko : See https://github.com/JSMitra/ForYourKeysOnly
+# Secure AI Agent Interaction using Fyko ANNs: See https://github.com/JSMitra/ForYourKeysOnly
 
 An AI Implementation of my thesis Project explained on YouTube: https://www.youtube.com/watch?v=fJqOqXfSf_M
 

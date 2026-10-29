@@ -373,7 +373,12 @@ Synthesize this evaluation into an executive mission briefing for the user. High
     )
     emit(11, "briefing_ready", "Strategic plan review briefing finalized", {"briefing": final_response})
 
-    return final_response
+    return {
+        "response": final_response,
+        "model_ulid": model_ulid,
+        "masked_key": aes_key_hex[:8] + "..." + aes_key_hex[-8:],
+        "audit_ulid": interaction_ulid,
+    }
 
 
 def handle_ann_callback(ulid: str, status: str) -> None:

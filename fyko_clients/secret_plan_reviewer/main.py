@@ -19,9 +19,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-sys.path.insert(0, "/app")
-
-from agent import (
+from secret_plan_reviewer.agent import (
     init_agent,
     tasks,
     enqueue_task,

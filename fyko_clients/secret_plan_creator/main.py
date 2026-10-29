@@ -26,10 +26,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-# Make shared importable when running inside Docker (PYTHONPATH=/app)
-sys.path.insert(0, "/app")
-
-from agent import init_agent, handle_user_message, handle_ann_callback
+# PYTHONPATH=/app is set in the Dockerfile.
+# Use the full package path — this works whether uvicorn is invoked as
+# `secret_plan_creator.main:app` (Docker) or `main:app` (local dev with
+# `cd secret_plan_creator && uvicorn main:app`).
+from secret_plan_creator.agent import init_agent, handle_user_message, handle_ann_callback
 
 # ── SSE event bus ─────────────────────────────────────────────────────────────
 # Maps session_id → asyncio.Queue of SSE event dicts
@@ -155,17 +156,34 @@ async def interact(req: InteractRequest):
             if req.session_id:
                 publish_step_event(req.session_id, evt)
 
-        response = await handle_user_message(
+        res = await handle_user_message(
             req.message,
             session_id=req.session_id,
             event_cb=event_callback if req.session_id else None,
         )
 
+        resp_text = res["response"] if isinstance(res, dict) else res
+        model_ulid = res.get("model_ulid") if isinstance(res, dict) else None
+        masked_key = res.get("masked_key") if isinstance(res, dict) else None
+        audit_ulid = res.get("audit_ulid") if isinstance(res, dict) else None
+
         # Signal SSE stream that mission is done
         if req.session_id and req.session_id in _sse_queues:
-            publish_step_event(req.session_id, {"type": "done", "response": response})
+            publish_step_event(req.session_id, {
+                "type": "done",
+                "response": resp_text,
+                "model_ulid": model_ulid,
+                "masked_key": masked_key,
+                "audit_ulid": audit_ulid,
+            })
 
-        return {"response": response, "session_id": req.session_id}
+        return {
+            "response": resp_text,
+            "model_ulid": model_ulid,
+            "masked_key": masked_key,
+            "audit_ulid": audit_ulid,
+            "session_id": req.session_id,
+        }
     except TimeoutError as exc:
         logger.error("Timeout: %s", exc)
         if req.session_id:

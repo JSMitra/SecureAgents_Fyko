@@ -1,4 +1,6 @@
-# SecureAgents Fyko
+# SecureAgents Fyko : See https://github.com/JSMitra/ForYourKeysOnly
+
+An AI Implementation of my thesis Project explained on YouTube: https://www.youtube.com/watch?v=fJqOqXfSf_M
 
 A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) request processing** through a pipeline of specialised microservices backed by PostgreSQL, MongoDB, and RabbitMQ.
 

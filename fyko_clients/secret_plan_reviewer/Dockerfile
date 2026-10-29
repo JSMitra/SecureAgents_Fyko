@@ -25,4 +25,7 @@ ENV PYTHONPATH=/app
 USER fyko
 EXPOSE 9002
 
-CMD ["python", "-m", "uvicorn", "secret_plan_reviewer.main:app", "--host", "0.0.0.0", "--port", "9002"]
+# --app-dir adds /app/secret_plan_reviewer to sys.path, so:
+#   • `from agent import ...`       resolves to /app/secret_plan_reviewer/agent.py  ✓
+#   • `from shared.xxx import ...`  resolves via PYTHONPATH=/app                    ✓
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9002", "--app-dir", "/app/secret_plan_reviewer"]

@@ -26,11 +26,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
-# PYTHONPATH=/app is set in the Dockerfile.
-# Use the full package path — this works whether uvicorn is invoked as
-# `secret_plan_creator.main:app` (Docker) or `main:app` (local dev with
-# `cd secret_plan_creator && uvicorn main:app`).
-from secret_plan_creator.agent import init_agent, handle_user_message, handle_ann_callback
+# --app-dir in the Dockerfile CMD puts this file's directory on sys.path,
+# so bare `from agent import ...` resolves correctly in Docker and locally.
+from agent import init_agent, handle_user_message, handle_ann_callback
 
 # ── SSE event bus ─────────────────────────────────────────────────────────────
 # Maps session_id → asyncio.Queue of SSE event dicts

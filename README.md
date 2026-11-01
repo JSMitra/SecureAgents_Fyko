@@ -4,8 +4,9 @@ An AI Implementation of my Liverpool John Moores University MSc thesis Project (
 ## Github Link of Thesis Project: https://github.com/JSMitra/ForYourKeysOnly
 ## YouTube Link: https://www.youtube.com/watch?v=fJqOqXfSf_M
 
-A multi-agent AI secure Interaction platform that orchestrates **ANN (Artificial Neural Network) request processing** through a pipeline of specialised microservices backed by PostgreSQL, MongoDB, and RabbitMQ. Two Agents can use an ANN to generate AES-256 symmetric keys and interact with each other. For security, The ANN generator could be deployed within Subnet/K8 cluster without any external interface. AI Agents operating within the Subnet for procuring an ANN. Outside world is not aware of ANN being used between 2 AI Agents. This makes MITM attacks virtually impossible.
-
+A multi-agent AI secure Interaction platform that orchestrates **ANN (Artificial Neural Network) request processing** through a pipeline of specialised microservices backed by PostgreSQL, MongoDB, and RabbitMQ. Two Agents can use an ANN to generate AES-256 symmetric keys and interact with each other securely. 
+For security, The ANN generator component could be deployed within Subnet/K8 cluster without any external interface. AI Agents operating within the Subnet for procuring an ANN. Outside world is not aware of ANN being used between 2 AI Agents. This makes MITM attacks virtually impossible.
+Idea is to extend this across different subnets or even Clouds to keep the ANN generation private and make two AI Agents interact securely with an ANN by generating AES 256 keys on the fly while sending secure messages to another AI Agent or any other component adhering to this protocol.
 ---
 
 ## Architecture

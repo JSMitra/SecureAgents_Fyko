@@ -1,6 +1,8 @@
 # Secure AI Agent Interaction using Fyko ANNs: See https://github.com/JSMitra/ForYourKeysOnly
 
-An AI Implementation of my thesis Project explained on YouTube: https://www.youtube.com/watch?v=fJqOqXfSf_M
+An AI Implementation of my Liverpool John Moores University MSc thesis Project (STUDENT ID: 1061239) 
+## Github Link of Thesis Project: https://github.com/JSMitra/ForYourKeysOnly
+## YouTube Link: https://www.youtube.com/watch?v=fJqOqXfSf_M
 
 A multi-agent AI platform that orchestrates **ANN (Artificial Neural Network) request processing** through a pipeline of specialised microservices backed by PostgreSQL, MongoDB, and RabbitMQ.
 

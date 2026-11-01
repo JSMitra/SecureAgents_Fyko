@@ -229,5 +229,14 @@ SecureAgents_Fyko/
 │   └── init.sql          # PostgreSQL DDL for docker-compose
 ├── docker-compose.yaml   # Local development stack
 ├── .env.example          # Environment variable template
+├── LICENSE               # MIT License
 └── README.md
 ```
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright (c) 2026 Sai Mitra J
+
